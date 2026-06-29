@@ -1,32 +1,104 @@
-const categoryButtons = document.querySelectorAll('.category-btn');
-const productCards = document.querySelectorAll('.product-card');
-const searchField = document.getElementById('productSearch');
+const productGrid = document.getElementById("productGrid");
+const categoryButtons = document.querySelectorAll(".category-btn");
+const searchField = document.getElementById("productSearch");
 
-function filterProducts(category = 'all', query = '') {
-  const normalizedQuery = query.trim().toLowerCase();
+let products = [];
+let activeCategory = "all";
 
-  productCards.forEach(card => {
-    const matchesCategory = category === 'all' || card.dataset.category === category;
-    const title = card.dataset.title.toLowerCase();
-    const description = card.querySelector('p').textContent.toLowerCase();
-    const matchesSearch =
-      normalizedQuery === '' ||
-      title.includes(normalizedQuery) ||
-      description.includes(normalizedQuery);
+// Load products from backend
+async function loadProducts() {
+  try {
+    const response = await fetch("http://localhost:5000/api/products");
+    products = await response.json();
 
-    card.style.display = matchesCategory && matchesSearch ? 'grid' : 'none';
+    renderProducts(products);
+  } catch (error) {
+    console.error("Failed to load products:", error);
+
+    productGrid.innerHTML =
+      "<h3>Unable to load products.</h3>";
+  }
+}
+
+// Display products
+function renderProducts(productList) {
+  productGrid.innerHTML = "";
+
+  productList.forEach((product) => {
+    productGrid.innerHTML += `
+      <article class="product-card">
+
+        <img src="${product.image}" alt="${product.name}">
+
+        <div class="product-content">
+
+          <span class="product-category">
+            ${product.category}
+          </span>
+
+          <h3>${product.name}</h3>
+
+          <p>${product.description}</p>
+
+          <div class="product-meta">
+            <span class="price">₹${product.price}</span>
+            <span class="package">${product.package}</span>
+          </div>
+
+        </div>
+
+        <div class="order-buttons">
+
+          <a
+            class="button btn-order"
+            target="_blank"
+            href="https://wa.me/7645899057?text=Hello InSizeOut, I would like to order ${encodeURIComponent(product.name)}">
+
+            Order via WhatsApp
+
+          </a>
+
+        </div>
+
+      </article>
+    `;
   });
 }
 
-categoryButtons.forEach(button => {
-  button.addEventListener('click', () => {
-    categoryButtons.forEach(btn => btn.classList.remove('active'));
-    button.classList.add('active');
-    filterProducts(button.dataset.category, searchField.value);
+// Filter
+function filterProducts() {
+  const query = searchField.value.toLowerCase();
+
+  const filtered = products.filter((product) => {
+    const matchCategory =
+      activeCategory === "all" ||
+      product.category === activeCategory;
+
+    const matchSearch =
+      product.name.toLowerCase().includes(query) ||
+      product.description.toLowerCase().includes(query);
+
+    return matchCategory && matchSearch;
+  });
+
+  renderProducts(filtered);
+}
+
+categoryButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+
+    categoryButtons.forEach((btn) =>
+      btn.classList.remove("active")
+    );
+
+    button.classList.add("active");
+
+    activeCategory = button.dataset.category;
+
+    filterProducts();
   });
 });
 
-searchField.addEventListener('input', () => {
-  const activeCategory = document.querySelector('.category-btn.active').dataset.category;
-  filterProducts(activeCategory, searchField.value);
-});
+searchField.addEventListener("input", filterProducts);
+
+loadProducts();
