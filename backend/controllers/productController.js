@@ -1,85 +1,131 @@
-const products = require("../data/products");
+const Product = require("../models/Product");
 
 // GET /api/products
-const getAllProducts = (req, res) => {
-  res.status(200).json(products);
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 // GET /api/products/:id
-const getProductById = (req, res) => {
-  const id = parseInt(req.params.id);
+const getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
 
-  const product = products.find((p) => p.id === id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
 
-  if (!product) {
-    return res.status(404).json({
+    res.status(200).json(product);
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: "Product not found",
+      message: error.message,
     });
   }
-
-  res.status(200).json(product);
 };
 
 // POST /api/products
-const createProduct = (req, res) => {
-  const newProduct = {
-    id: products.length + 1,
-    ...req.body,
-  };
+const createProduct = async (req, res) => {
+  try {
+    const product = await Product.create(req.body);
 
-  products.push(newProduct);
-
-  res.status(201).json(newProduct);
+    res.status(201).json(product);
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 // PUT /api/products/:id
-const updateProduct = (req, res) => {
-  const id = parseInt(req.params.id);
+const updateProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
-  const product = products.find((p) => p.id === id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
 
-  if (!product) {
-    return res.status(404).json({
+    res.status(200).json(product);
+  } catch (error) {
+    res.status(400).json({
       success: false,
-      message: "Product not found",
+      message: error.message,
     });
   }
-
-  Object.assign(product, req.body);
-
-  res.status(200).json(product);
 };
 
 // DELETE /api/products/:id
-const deleteProduct = (req, res) => {
-  const id = parseInt(req.params.id);
+const deleteProduct = async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
 
-  const index = products.findIndex((p) => p.id === id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
 
-  if (index === -1) {
-    return res.status(404).json({
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message: "Product not found",
+      message: error.message,
     });
   }
-
-  products.splice(index, 1);
-
-  res.sendStatus(204);
 };
 
 // GET /api/products/search?q=
-const searchProducts = (req, res) => {
-  const query = req.query.q?.toLowerCase() || "";
+const searchProducts = async (req, res) => {
+  try {
+    const query = req.query.q || "";
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(query) ||
-      p.category.toLowerCase().includes(query)
-  );
+    const products = await Product.find({
+      $or: [
+        {
+          name: {
+            $regex: query,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $regex: query,
+            $options: "i",
+          },
+        },
+      ],
+    });
 
-  res.status(200).json(filtered);
+    res.status(200).json(products);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
 
 module.exports = {
