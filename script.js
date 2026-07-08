@@ -8,7 +8,7 @@ let activeCategory = "all";
 // Load products from backend
 async function loadProducts() {
   try {
-    const response = await fetch("http://localhost:5000/api/products");
+    const response = await fetch("https://insizeout-1.onrender.com/api/products");
     products = await response.json();
 
     renderProducts(products);

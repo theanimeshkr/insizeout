@@ -8,8 +8,14 @@ const productRoutes = require("./routes/productRoutes");
 const app = express();
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  .then(() => {
+    console.log("MongoDB Connected");
+  })
+  .catch((err) => {
+    console.error("Mongo Error:", err);
+    console.log("MONGO_URI exists:", !!process.env.MONGO_URI);
+    console.log("URI starts with:", process.env.MONGO_URI?.substring(0, 40));
+  });
 
 app.use(cors());
 app.use(express.json());
